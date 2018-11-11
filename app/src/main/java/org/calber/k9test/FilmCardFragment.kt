@@ -18,13 +18,13 @@ import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
 import kotlinx.android.synthetic.main.card_film.view.*
 import kotlinx.android.synthetic.main.film_fragment.*
+import kotlinx.android.synthetic.main.fragment_film_detail.*
 
 
 private val KEY = "1f8205e9"
 private var films: MutableList<Film> = mutableListOf()
 
-class FilmCardFragment : Fragment() {
-
+class FilmCardFragment : Fragment(), SubFragmentInteraction {
     companion object {
         fun newInstance() = FilmCardFragment()
     }
@@ -33,55 +33,63 @@ class FilmCardFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        return inflater.inflate(R.layout.film_fragment, container, false)
+        val view = inflater.inflate(R.layout.film_fragment, container, false)
+
+        view.post {
+            val layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
+            list.layoutManager = layoutManager
+            val filmAdapter = FilmAdapter(this)
+            list.adapter = filmAdapter
+
+            val api = OmdbApi.create()
+            val idlist = listOf(
+                api.filmById("tt1285016", 1, KEY),
+                api.filmById("tt1448755", 1, KEY),
+                api.filmById("tt2015381", 1, KEY),
+                api.filmById("tt0499549", 1, KEY),
+                api.filmById("tt0091223", 1, KEY),
+                api.filmById("tt0412142", 1, KEY),
+                api.filmById("tt1367652", 1, KEY)
+
+            )
+
+            Observable.merge(idlist)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe({ n ->
+                    Log.d("TAG", n.toString())
+                    films.add(n)
+                    filmAdapter.notifyItemInserted(films.size - 1)
+                }, { e ->
+                    Log.d("TAG", e.localizedMessage, e)
+                }, {
+                    Log.d("TAG", "complete")
+                })
+                .disposedWith(this)
+
+            val callback = DragAdapter(
+                filmAdapter, context!!,
+                ItemTouchHelper.UP.or(ItemTouchHelper.DOWN),
+                ItemTouchHelper.LEFT.or(ItemTouchHelper.RIGHT)
+            )
+            val helper = ItemTouchHelper(callback)
+            helper.attachToRecyclerView(list)
+
+        }
+        return view
     }
 
-    override fun onActivityCreated(savedInstanceState: Bundle?) {
-        super.onActivityCreated(savedInstanceState)
+    override fun select(holder: View, position: Int) {
+        val fragment = FilmDetailFragment.newInstance(position)
 
-        val api = OmdbApi.create()
-
-        val idlist = listOf(
-            api.filmById("tt1285016", 1, KEY),
-            api.filmById("tt1448755", 1, KEY),
-            api.filmById("tt2015381", 1, KEY),
-            api.filmById("tt0499549", 1, KEY),
-            api.filmById("tt0091223", 1, KEY),
-            api.filmById("tt0412142", 1, KEY),
-            api.filmById("tt1367652", 1, KEY)
-
-        )
-
-        val layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
-        list.layoutManager = layoutManager
-        val filmAdapter = FilmAdapter()
-        list.adapter = filmAdapter
-
-        val callback = DragAdapter(
-            filmAdapter, context!!,
-            ItemTouchHelper.UP.or(ItemTouchHelper.DOWN),
-            ItemTouchHelper.LEFT.or(ItemTouchHelper.RIGHT)
-        )
-        val helper = ItemTouchHelper(callback)
-        helper.attachToRecyclerView(list)
-
-        Observable.merge(idlist)
-            .subscribeOn(Schedulers.io())
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe({ n ->
-                Log.d("TAG", n.toString())
-                films.add(n)
-                filmAdapter.notifyItemInserted(films.size - 1)
-            }, { e ->
-                Log.d("TAG", e.localizedMessage, e)
-            }, {
-                Log.d("TAG", "complete")
-            })
-            .disposedWith(this)
-
+        fragmentManager?.beginTransaction()
+            ?.hide(this)
+            ?.add(R.id.root, fragment, fragment.tag)
+            ?.addToBackStack(fragment.tag)
+            ?.commit()
     }
-
 }
+
 
 class DragAdapter(adapter: FilmAdapter, context: Context, dragDirs: Int, swipeDirs: Int) :
     ItemTouchHelper.SimpleCallback(dragDirs, swipeDirs) {
@@ -102,11 +110,13 @@ class DragAdapter(adapter: FilmAdapter, context: Context, dragDirs: Int, swipeDi
         films.removeAt(position)
         adapter.notifyItemRemoved(position)
     }
-
-
 }
 
-class FilmAdapter : RecyclerView.Adapter<FilmAdapter.ViewHolder>() {
+interface SubFragmentInteraction {
+    fun select(holder: View, position: Int)
+}
+
+class FilmAdapter(private val listener: SubFragmentInteraction) : RecyclerView.Adapter<FilmAdapter.ViewHolder>() {
     lateinit var context: Context
 
     class ViewHolder(val view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view)
@@ -126,8 +136,39 @@ class FilmAdapter : RecyclerView.Adapter<FilmAdapter.ViewHolder>() {
         holder.view.title.text = film.title
         holder.view.plot.text = film.plot
         Picasso.get().load(film.poster).into(holder.view.poster)
+        holder.view.setOnClickListener {
+            listener.select(it, position)
+        }
+    }
+}
+
+class FilmDetailFragment : Fragment() {
+    companion object {
+        fun newInstance(position: Int) = FilmDetailFragment().apply {
+            arguments = Bundle().apply {
+                putInt("position", position)
+            }
+        }
     }
 
+    private var position: Int = 0
+
+    override fun onCreateView(
+        inflater: LayoutInflater, container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View? {
+        position = arguments?.getInt("position") ?: 0
+        return inflater.inflate(R.layout.fragment_film_detail, container, false)
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        detail_title.text = films[position].title
+
+        Picasso.get().load(films[position].poster).into(detail_poster)
+
+    }
 }
 
 data class Film(
