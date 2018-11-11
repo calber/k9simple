@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.annotations.SerializedName
 import com.kizitonwose.android.disposebag.disposedWith
+import com.squareup.picasso.Picasso
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
@@ -41,9 +42,13 @@ class FilmFragment : Fragment() {
 
         val idlist = listOf(
             api.filmById("tt1285016", 1, KEY),
-            api.filmById("tt1285017", 1, KEY),
-            api.filmById("tt1285018", 1, KEY),
-            api.filmById("tt1285019", 1, KEY)
+            api.filmById("tt1448755", 1, KEY),
+            api.filmById("tt2015381", 1, KEY),
+            api.filmById("tt0499549", 1, KEY),
+            api.filmById("tt0091223", 1, KEY),
+            api.filmById("tt0412142", 1, KEY),
+            api.filmById("tt1367652", 1, KEY)
+
         )
 
         val layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
@@ -88,6 +93,8 @@ class FilmAdapter : RecyclerView.Adapter<FilmAdapter.ViewHolder>() {
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val film = films[position]
         holder.view.title.text = film.title
+        holder.view.plot.text = film.plot
+        Picasso.get().load(film.poster).into(holder.view.poster)
     }
 
 
