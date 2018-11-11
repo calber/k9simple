@@ -10,6 +10,6 @@
     <fragment
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:name="org.calber.k9test.FilmFragment"
+            android:name="org.calber.k9test.FilmCardFragment"
             android:id="@+id/fragment"/>
 </FrameLayout>

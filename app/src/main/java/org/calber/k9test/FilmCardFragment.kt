@@ -7,6 +7,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.annotations.SerializedName
@@ -20,12 +21,12 @@ import kotlinx.android.synthetic.main.film_fragment.*
 
 
 private val KEY = "1f8205e9"
-private var films: Array<Film> = arrayOf()
+private var films: MutableList<Film> = mutableListOf()
 
-class FilmFragment : Fragment() {
+class FilmCardFragment : Fragment() {
 
     companion object {
-        fun newInstance() = FilmFragment()
+        fun newInstance() = FilmCardFragment()
     }
 
     override fun onCreateView(
@@ -56,13 +57,20 @@ class FilmFragment : Fragment() {
         val filmAdapter = FilmAdapter()
         list.adapter = filmAdapter
 
+        val callback = DragAdapter(
+            filmAdapter, context!!,
+            ItemTouchHelper.UP.or(ItemTouchHelper.DOWN),
+            ItemTouchHelper.LEFT.or(ItemTouchHelper.RIGHT)
+        )
+        val helper = ItemTouchHelper(callback)
+        helper.attachToRecyclerView(list)
 
         Observable.merge(idlist)
             .subscribeOn(Schedulers.io())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({ n ->
                 Log.d("TAG", n.toString())
-                films += n
+                films.add(n)
                 filmAdapter.notifyItemInserted(films.size - 1)
             }, { e ->
                 Log.d("TAG", e.localizedMessage, e)
@@ -72,6 +80,29 @@ class FilmFragment : Fragment() {
             .disposedWith(this)
 
     }
+
+}
+
+class DragAdapter(adapter: FilmAdapter, context: Context, dragDirs: Int, swipeDirs: Int) :
+    ItemTouchHelper.SimpleCallback(dragDirs, swipeDirs) {
+    var adapter = adapter
+
+    override fun onMove(
+        recyclerView: RecyclerView,
+        viewHolder: RecyclerView.ViewHolder,
+        target: RecyclerView.ViewHolder
+    ): Boolean {
+        films.set(target.adapterPosition, films[viewHolder.adapterPosition])
+        adapter.notifyItemMoved(viewHolder.adapterPosition, target.adapterPosition)
+        return true
+    }
+
+    override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+        val position = viewHolder.adapterPosition
+        films.removeAt(position)
+        adapter.notifyItemRemoved(position)
+    }
+
 
 }
 
@@ -96,7 +127,6 @@ class FilmAdapter : RecyclerView.Adapter<FilmAdapter.ViewHolder>() {
         holder.view.plot.text = film.plot
         Picasso.get().load(film.poster).into(holder.view.poster)
     }
-
 
 }
 
