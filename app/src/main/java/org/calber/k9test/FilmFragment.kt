@@ -1,25 +1,31 @@
 package org.calber.k9test
 
+import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.google.gson.annotations.SerializedName
 import com.kizitonwose.android.disposebag.disposedWith
 import io.reactivex.Observable
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.schedulers.Schedulers
+import kotlinx.android.synthetic.main.card_film.view.*
+import kotlinx.android.synthetic.main.film_fragment.*
 
 
 private val KEY = "1f8205e9"
+private var films: Array<Film> = arrayOf()
 
 class FilmFragment : Fragment() {
 
     companion object {
         fun newInstance() = FilmFragment()
     }
-
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -31,28 +37,59 @@ class FilmFragment : Fragment() {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-
         val api = OmdbApi.create()
 
         val idlist = listOf(
-            api.filmById("tt1285016",1, KEY),
-            api.filmById("tt1285017",1, KEY),
-            api.filmById("tt1285018",1, KEY),
-            api.filmById("tt1285019",1, KEY)
+            api.filmById("tt1285016", 1, KEY),
+            api.filmById("tt1285017", 1, KEY),
+            api.filmById("tt1285018", 1, KEY),
+            api.filmById("tt1285019", 1, KEY)
         )
+
+        val layoutManager = LinearLayoutManager(context, RecyclerView.VERTICAL, false)
+        list.layoutManager = layoutManager
+        val filmAdapter = FilmAdapter()
+        list.adapter = filmAdapter
+
 
         Observable.merge(idlist)
             .subscribeOn(Schedulers.io())
-            .subscribe ({ n ->
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe({ n ->
                 Log.d("TAG", n.toString())
-            },{ e ->
-                Log.d("TAG", e.localizedMessage,e)
+                films += n
+                filmAdapter.notifyItemInserted(films.size - 1)
+            }, { e ->
+                Log.d("TAG", e.localizedMessage, e)
             }, {
                 Log.d("TAG", "complete")
             })
             .disposedWith(this)
 
     }
+
+}
+
+class FilmAdapter : RecyclerView.Adapter<FilmAdapter.ViewHolder>() {
+    lateinit var context: Context
+
+    class ViewHolder(val view: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(view)
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+        context = parent.context
+        val v = LayoutInflater.from(context).inflate(R.layout.card_film, parent, false)
+        return ViewHolder(v)
+    }
+
+    override fun getItemCount(): Int {
+        return films.size
+    }
+
+    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        val film = films[position]
+        holder.view.title.text = film.title
+    }
+
 
 }
 

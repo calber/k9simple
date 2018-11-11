@@ -16,6 +16,7 @@
             android:fillViewport="true">
 
         <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/list"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"/>
     </androidx.core.widget.NestedScrollView>
@@ -23,7 +24,6 @@
 
     <androidx.constraintlayout.widget.ConstraintLayout
             app:layout_behavior="@string/bottom_sheet_behavior"
-            android:id="@id/bottom"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:isScrollContainer="false">
