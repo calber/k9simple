@@ -1,16 +1,15 @@
 package org.calber.k9test
 
 import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import com.google.gson.annotations.SerializedName
 import com.kizitonwose.android.disposebag.disposedWith
 import io.reactivex.Observable
 import io.reactivex.schedulers.Schedulers
-import java.util.*
 
 
 private val KEY = "1f8205e9"
