@@ -2,6 +2,7 @@ package org.calber.k9test
 
 import android.content.Context
 import android.os.Bundle
+import android.transition.Fade
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -81,6 +82,7 @@ class FilmCardFragment : Fragment(), SubFragmentInteraction {
 
     override fun select(holder: View, position: Int) {
         val fragment = FilmDetailFragment.newInstance(position)
+        fragment.enterTransition = Fade()
 
         fragmentManager?.beginTransaction()
             ?.hide(this)
@@ -164,9 +166,14 @@ class FilmDetailFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        detail_title.text = films[position].title
+        val film = films[position]
+        detail_title.text = film.title
+        detail_director.text = "directed: ${film.director}"
+        detail_year.text = "year: ${film.year}"
+        detail_awards.text = film.awards
+        detail_plot.text = film.plot
 
-        Picasso.get().load(films[position].poster).into(detail_poster)
+        Picasso.get().load(film.poster).into(detail_poster)
 
     }
 }
